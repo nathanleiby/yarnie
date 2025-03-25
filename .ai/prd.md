@@ -1,124 +1,147 @@
-# **Product Requirements Document (PRD)**
+# Yarnie - Stitch Counter PRD
 
-## **Goal**
+## Overview
 
-Create a simple phone-based app for counting stiches when making yarn based projects.
-The app should run on an iPhone and work fully offline.
+Yarnie is a mobile application designed to help knitters and crocheters keep track of their stitches and rows in yarn-based projects. The app focuses on simplicity and offline functionality, making it perfect for crafters to use anywhere.
+
+## Problem Statement
+
+Knitters and crocheters often:
+
+- Lose track of their current row count
+- Need a simple way to count stitches
+- Want to manage multiple projects
+- Need to work offline
+- Prefer using their phone over physical counters
+
+## Goals
+
+1. Create a simple, intuitive stitch counting app
+2. Provide full offline functionality
+3. Support multiple ongoing projects
+4. Deliver a smooth mobile experience on iPhone
+
+## Non-Goals
+
+- Social features
+- Pattern library
+- Online synchronization
+- Complex project management features
+
+## User Personas
+
+### Casual Crafter
+
+- Works on 1-2 projects at a time
+- Needs basic row counting
+- Values simplicity
+
+### Dedicated Knitter
+
+- Manages multiple projects
+- Needs reliable project tracking
+- Wants quick access to recent projects
+
+## Features
+
+### MVP (Minimum Viable Product)
+
+#### Project List View
+
+- Display list of projects
+- Sort by recency (updated/created)
+- Pin projects to top
+- Mark project status (finished/in progress)
+- Create new projects
+- Project name as only required field
+
+#### Project View
+
+- Large, clear display of current row count
+- Large increment button (+)
+- Small decrement button (-)
+- Reset functionality with confirmation
+- Prevent negative row counts
+
+### Technical Requirements
+
+#### Mobile Development
+
+- React Native for iOS support
+- Offline-first architecture
+- Local storage for project data
+- Simple, responsive UI
+
+#### Web Support
+
+- GitHub Pages deployment
+- Basic web functionality
+- Responsive design
+
+## Success Metrics
+
+1. App stability
+2. User interaction speed (<30ms)
+3. Offline reliability
+4. Project data persistence
+5. User satisfaction with UI
+
+## Timeline
+
+Phase 1 (MVP) - 1 month
+
+- Week 1: Project List View
+- Week 2: Project View
+- Week 3: Device Support and Testing
+- Week 4: Polish and Bug Fixes
+
+## Testing Strategy
+
+### Unit Tests
+
+- Jest for component testing
+- Core functionality coverage
+- State management tests
+
+### Integration Tests
+
+- Project creation flow
+- Counter functionality
+- Data persistence
+
+### Device Testing
+
+- iOS simulator testing
+- Physical device testing
+- Performance testing
+
+## Risks and Mitigation
+
+1. Performance
+
+   - Optimize render cycles
+   - Minimize state updates
+   - Regular performance testing
+
+2. Data Loss
+
+   - Robust local storage
+   - Auto-save functionality
+   - Undo/redo support
+
+3. User Experience
+   - Large, touch-friendly buttons
+   - Clear visual feedback
+   - Intuitive navigation
+
+## Tech Stack
+
+- Frontend: React Native
+- State Management: Local state
+- Storage: AsyncStorage
+- Testing: Jest
+- Web Support: GitHub Pages
 
 ---
 
-## **Features and Subtasks**
-
-### **Feature 1: Project list view**
-
-**Goal:** Display a list of projects. Allow simple sorting and creation interactions.
-
-#### **Subtasks:**
-
-1. **List of Projects**
-
-   - Show a list of projects
-   - By default sort by recency (first by "updated", then by "created")
-
-2. **List of Projects: Interations**
-
-   - Allow pinning a project to the top of the list
-   - Allow marking a project's status ('finished' or 'in progress')
-   - Clicking on a project should enter
-
-3. **Create Project:**
-
-   - Have a single large button to create a new project
-   - The only required project property is a name
-
-4. **Create placeholder for 'Project' view.**
-
-   - You should enter this view when you click on an existing project
-   - You should enter this view after creating a new project
-
----
-
-### **Feature 2: Project View**
-
-**Goal:** Create a very simple view with a single large number that indicates the 'current row' and some buttons to increment/decrement/reset.
-
-#### **Subtasks:**
-
-1. **Basic View:**
-
-   -
-
-2. **Increment/Decrement Row:**
-
-   - A very large plus (+) icon lets you add a row
-   - A small minus (-) icon lets you remove a row
-   - A small reset icon lets you reset to 0 (this requires a confirmation dialog 'are you sure?' interaction)
-   - You cannot have negative rows.
-
-3. **Mobile device Support**
-
-   - Setup the project so we can ship it to an android device.
-   - Setup the project so we can ship it to an iphone.
-
----
-
-## **Testing Strategy**
-
-**Goal:** Implement sanity-check-level automated testing to ensure core functionality works as expected.
-
-#### **Subtasks:**
-
-1. **Unit Tests:**
-
-   - Use **Jest** to test individual components and functions.
-   - Focus on core functionality (e.g., page loads, links work).
-
-2. **Integration Tests:**
-
-   - Test interactions between components (e.g., map rendering, blog post rendering).
-   - Use mocks for external dependencies (e.g., GPX file parsing).
-
-3. **End-to-End (E2E) Tests:**
-   - Use **Jest** or **Cypress** to test user flows (e.g., navigating, clicking buttons).
-   - Ensure tests run automatically in CI/CD pipelines.
-
----
-
-## **Tech Stack**
-
-- **Frontend:**
-  - **React**
-  - **React Native** for hardware support (iphone)
-- **Hosting:**
-  - **GitHub Pages** should be used to support a simple web based mode.
-- **Testing:**
-  - **Jest** for unit and integration tests.
-  - **Cypress** (optional) for E2E tests.
-
----
-
-## **Timeline**
-
-**Priority:**
-
-1. **Phase 1: List View**
-
-   - Implement map integration, route metrics, and photos.
-   - Simulate a fake GPX route for testing.
-
-2. **Phase 2: Project View**
-
-   - Set up Markdown rendering with syntax highlighting and LaTeX support.
-   - Create a simple blog layout.
-
-3. **Phase 3: Device support**
-
----
-
-## **Performance and Accessibility**
-
-- **Performance:**
-  - All interactions should occur in <30ms
-- **Accessibility:**
-  - Ensure compliance with WCAG standards (e.g., keyboard navigation, ARIA labels).
-  - No dark mode required.
+_This PRD is a living document and will be updated as the project evolves._
