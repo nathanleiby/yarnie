@@ -7,7 +7,7 @@ import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 export default function NewProjectScreen() {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { createProject } = useProjects();
+  const { createProject, refreshProjects } = useProjects();
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -17,6 +17,7 @@ export default function NewProjectScreen() {
 
     try {
       await createProject({ name: name.trim() });
+      await refreshProjects();
       router.back();
     } catch (e) {
       setError("Failed to create project");
