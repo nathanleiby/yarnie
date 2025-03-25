@@ -41,13 +41,6 @@ export function useProjects() {
     loadProjects();
   }, []);
 
-  // Save projects to storage whenever they change
-  useEffect(() => {
-    if (!isLoading) {
-      saveProjects(projects);
-    }
-  }, [projects, isLoading]);
-
   const saveProjects = async (updatedProjects: Project[]) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProjects));
@@ -70,6 +63,7 @@ export function useProjects() {
 
     const updatedProjects = [...projects, newProject];
     await saveProjects(updatedProjects);
+    return newProject;
   };
 
   const updateProject = async (id: string, updatedProject: Project) => {

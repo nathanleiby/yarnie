@@ -16,9 +16,9 @@ export default function NewProjectScreen() {
     }
 
     try {
-      await createProject({ name: name.trim() });
+      const newProject = await createProject({ name: name.trim() });
       await refreshProjects();
-      router.back();
+      router.replace(`/${newProject.id}`);
     } catch (e) {
       setError("Failed to create project");
       console.error(e);
