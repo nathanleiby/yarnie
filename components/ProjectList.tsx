@@ -53,16 +53,27 @@ if (Platform.OS === "android") {
  * Custom spring layout animation configuration for smoother transitions
  */
 const CustomLayoutSpring = {
-  duration: 400,
-  create: {
-    type: LayoutAnimation.Types.spring,
-    property: LayoutAnimation.Properties.scaleXY,
-    springDamping: 0.7,
-  },
-  update: {
-    type: LayoutAnimation.Types.spring,
-    springDamping: 0.7,
-  },
+  duration: Platform.OS === "web" ? 200 : 400,
+  create:
+    Platform.OS === "web"
+      ? {
+          type: LayoutAnimation.Types.easeInEaseOut,
+          property: LayoutAnimation.Properties.opacity,
+        }
+      : {
+          type: LayoutAnimation.Types.spring,
+          property: LayoutAnimation.Properties.scaleXY,
+          springDamping: 0.7,
+        },
+  update:
+    Platform.OS === "web"
+      ? {
+          type: LayoutAnimation.Types.easeInEaseOut,
+        }
+      : {
+          type: LayoutAnimation.Types.spring,
+          springDamping: 0.7,
+        },
 };
 
 /**
@@ -120,22 +131,26 @@ export default function ProjectList({
     // Configure layout animation for position changes
     LayoutAnimation.configureNext(CustomLayoutSpring);
 
-    // Animate the specific item
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 0.6,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    if (Platform.OS === "web") {
+      // Simpler animation for web
+      callback();
+    } else {
+      // Full animation sequence for native
+      Animated.sequence([
+        Animated.timing(fadeAnim, {
+          toValue: 0.6,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
 
-    // Execute the state change
-    callback();
+      callback();
+    }
   };
 
   // Refresh projects when screen comes into focus
@@ -165,13 +180,10 @@ export default function ProjectList({
     const fadeAnim = animationValuesRef.current[item.id];
     if (!fadeAnim) return null;
 
-    return (
-      <Animated.View
-        key={item.id}
-        style={[
-          styles.projectItem,
-          item.pinned && styles.projectItemPinned,
-          {
+    const animationStyle =
+      Platform.OS === "web"
+        ? {}
+        : {
             opacity: fadeAnim,
             transform: [
               {
@@ -181,7 +193,15 @@ export default function ProjectList({
                 }),
               },
             ],
-          },
+          };
+
+    return (
+      <Animated.View
+        key={item.id}
+        style={[
+          styles.projectItem,
+          item.pinned && styles.projectItemPinned,
+          animationStyle,
         ]}
         testID="project-item"
       >
