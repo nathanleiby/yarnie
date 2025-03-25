@@ -57,8 +57,15 @@ export function useProjects() {
       updatedAt: new Date(),
       status: "in_progress",
       pinned: false,
+      rowCount: 0,
     };
     setProjects([...projects, newProject]);
+  };
+
+  const updateProject = (id: string, updatedProject: Project) => {
+    setProjects(
+      projects.map((project) => (project.id === id ? updatedProject : project))
+    );
   };
 
   const togglePinProject = (id: string) => {
@@ -91,6 +98,7 @@ export function useProjects() {
     isLoading,
     error,
     createProject,
+    updateProject,
     togglePinProject,
     toggleProjectStatus,
   };

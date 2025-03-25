@@ -1,3 +1,4 @@
+import { Link } from "expo-router";
 import React, { useState } from "react";
 import {
   FlatList,
@@ -22,6 +23,8 @@ export interface Project {
   status: "in_progress" | "finished";
   /** Whether the project is pinned to the top of the list */
   pinned: boolean;
+  /** Current row count */
+  rowCount: number;
 }
 
 /**
@@ -81,6 +84,36 @@ const ProjectList: React.FC<ProjectListProps> = ({
     }
   };
 
+  const renderProject = ({ item }: { item: Project }) => (
+    <Link href={`/${item.id}`} asChild>
+      <TouchableOpacity style={styles.projectItem} testID="project-item">
+        <Text testID={`project-name-${item.id}`}>{item.name}</Text>
+        <View style={styles.projectActions}>
+          <TouchableOpacity
+            testID={`status-${item.id}`}
+            onPress={(e) => {
+              e.stopPropagation();
+              onToggleStatus?.(item.id);
+            }}
+          >
+            <Text>
+              {item.status === "in_progress" ? "In Progress" : "Finished"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID={`pin-button-${item.id}`}
+            onPress={(e) => {
+              e.stopPropagation();
+              onPinProject?.(item.id);
+            }}
+          >
+            <Text>{item.pinned ? "📌" : "📍"}</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Link>
+  );
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -135,25 +168,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
       <FlatList
         data={sortedProjects}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.projectItem} testID="project-item">
-            <Text testID={`project-name-${item.id}`}>{item.name}</Text>
-            <TouchableOpacity
-              testID={`status-${item.id}`}
-              onPress={() => onToggleStatus?.(item.id)}
-            >
-              <Text>
-                {item.status === "in_progress" ? "In Progress" : "Finished"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID={`pin-button-${item.id}`}
-              onPress={() => onPinProject?.(item.id)}
-            >
-              <Text>{item.pinned ? "📌" : "📍"}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        renderItem={renderProject}
       />
 
       {isCreating ? (
@@ -225,6 +240,11 @@ const styles = StyleSheet.create({
     color: "red",
     textAlign: "center",
     margin: 16,
+  },
+  projectActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
   },
 });
 

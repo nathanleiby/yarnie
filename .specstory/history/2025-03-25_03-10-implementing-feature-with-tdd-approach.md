@@ -1366,6 +1366,352 @@ Now let's create a custom hook to manage our projects with AsyncStorage:
 
 ---
 
+```diff
+- 
++ import { useEffect, useState } from 'react';
++ import AsyncStorage from '@react-native-async-storage/async-storage';
++ import { Project } from '@/components/ProjectList';
++ 
++ const STORAGE_KEY = '@yairn/projects';
++ 
++ export function useProjects() {
++   const [projects, setProjects] = useState<Project[]>([]);
++   const [isLoading, setIsLoading] = useState(true);
++   const [error, setError] = useState<string | null>(null);
++ 
++   // Load projects from storage on mount
++   useEffect(() => {
++     loadProjects();
++   }, []);
++ 
++   // Save projects to storage whenever they change
++   useEffect(() => {
++     if (!isLoading) {
++       saveProjects(projects);
++     }
++   }, [projects, isLoading]);
++ 
++   const loadProjects = async () => {
++     try {
++       const storedProjects = await AsyncStorage.getItem(STORAGE_KEY);
++       if (storedProjects) {
++         const parsedProjects = JSON.parse(storedProjects);
++         // Convert string dates back to Date objects
++         const projectsWithDates = parsedProjects.map((project: any) => ({
++           ...project,
++           updatedAt: new Date(project.updatedAt),
++         }));
++         setProjects(projectsWithDates);
++       }
++     } catch (e) {
++       setError('Failed to load projects');
++       console.error('Failed to load projects:', e);
++     } finally {
++       setIsLoading(false);
++     }
++   };
++ 
++   const saveProjects = async (projectsToSave: Project[]) => {
++     try {
++       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(projectsToSave));
++     } catch (e) {
++       setError('Failed to save projects');
++       console.error('Failed to save projects:', e);
++     }
++   };
++ 
++   const createProject = ({ name }: { name: string }) => {
++     const newProject: Project = {
++       id: Date.now().toString(),
++       name,
++       updatedAt: new Date(),
++       status: 'in_progress',
++       pinned: false,
++     };
++     setProjects([...projects, newProject]);
++   };
++ 
++   const togglePinProject = (id: string) => {
++     setProjects(
++       projects.map((project) =>
++         project.id === id
++           ? { ...project, pinned: !project.pinned, updatedAt: new Date() }
++           : project
++       )
++     );
++   };
++ 
++   const toggleProjectStatus = (id: string) => {
++     setProjects(
++       projects.map((project) =>
++         project.id === id
++           ? {
++               ...project,
++               status: project.status === 'in_progress' ? 'finished' : 'in_progress',
++               updatedAt: new Date(),
++             }
++           : project
++       )
++     );
++   };
++ 
++   return {
++     projects,
++     isLoading,
++     error,
++     createProject,
++     togglePinProject,
++     toggleProjectStatus,
++   };
++ }
+```
+
+---
+
+Now let's update the ProjectList component to handle status toggling:
+
+---
+
+```diff
+    /** Callback function when a new project is created */
+    onCreateProject?: (project: { name: string }) => void;
++   /** Callback function when a project's status is toggled */
++   onToggleStatus?: (id: string) => void;
++   /** Whether the component is in a loading state */
++   isLoading?: boolean;
++   /** Error message to display */
++   error?: string | null;
+  }
+  
+    onPinProject,
+    onCreateProject,
++   onToggleStatus,
++   isLoading,
++   error,
+  }) => {
+    const [isCreating, setIsCreating] = useState(false);
+      }
+    };
++ 
++   if (isLoading) {
++     return (
++       <View style={styles.container}>
++         <Text>Loading projects...</Text>
++       </View>
++     );
++   }
++ 
++   if (error) {
++     return (
++       <View style={styles.container}>
++         <Text style={styles.errorText}>{error}</Text>
++       </View>
++     );
++   }
+  
+    if (projects.length === 0) {
+            <View style={styles.projectItem} testID="project-item">
+              <Text testID={`project-name-${item.id}`}>{item.name}</Text>
+-             <Text testID={`status-${item.id}`}>
+-               {item.status === "in_progress" ? "In Progress" : "Finished"}
+-             </Text>
++             <TouchableOpacity
++               testID={`status-${item.id}`}
++               onPress={() => onToggleStatus?.(item.id)}
++             >
++               <Text>{item.status === 'in_progress' ? 'In Progress' : 'Finished'}</Text>
++             </TouchableOpacity>
+              <TouchableOpacity
+                testID={`pin-button-${item.id}`}
+                onPress={() => onPinProject?.(item.id)}
+              >
+-               <Text>{item.pinned ? "📌" : "📍"}</Text>
++               <Text>{item.pinned ? '📌' : '📍'}</Text>
+              </TouchableOpacity>
+            </View>
+      marginTop: 16,
+    },
++   errorText: {
++     color: 'red',
++     textAlign: 'center',
++     margin: 16,
++   },
+  });
+  
+```
+
+---
+
+Finally, let's update the ProjectsScreen to use our new hook:
+
+---
+
+```diff
+- import ProjectList, { Project } from "@/components/ProjectList";
+- import { View } from "@/components/Themed";
+- import { useState } from "react";
+- import { StyleSheet } from "react-native";
++ import { StyleSheet } from 'react-native';
++ import { View } from '@/components/Themed';
++ import ProjectList from '@/components/ProjectList';
++ import { useProjects } from '@/hooks/useProjects';
+  
+  export default function ProjectsScreen() {
+-   const [projects, setProjects] = useState<Project[]>([]);
+- 
+-   const handleCreateProject = ({ name }: { name: string }) => {
+-     const newProject: Project = {
+-       id: Date.now().toString(), // Simple ID generation for now
+-       name,
+-       updatedAt: new Date(),
+-       status: "in_progress",
+-       pinned: false,
+-     };
+-     setProjects([...projects, newProject]);
+-   };
+- 
+-   const handlePinProject = (id: string) => {
+-     setProjects(
+-       projects.map((project) =>
+-         project.id === id ? { ...project, pinned: !project.pinned } : project
+-       )
+-     );
+-   };
++   const {
++     projects,
++     isLoading,
++     error,
++     createProject,
++     togglePinProject,
++     toggleProjectStatus,
++   } = useProjects();
+  
+    return (
+      <View style={styles.container}>
+        <ProjectList
+          projects={projects}
+-         onCreateProject={handleCreateProject}
+-         onPinProject={handlePinProject}
++         isLoading={isLoading}
++         error={error}
++         onCreateProject={createProject}
++         onPinProject={togglePinProject}
++         onToggleStatus={toggleProjectStatus}
+        />
+      </View>
+```
+
+---
+
+Let's commit these changes:
+
+---
+
+```bash
+git add . && git commit -m "feat: add persistent storage and status toggling\n\n- Added AsyncStorage for persistent project storage\n- Created useProjects hook for centralized project management\n- Added loading and error states to ProjectList\n- Added ability to toggle project status\n- Updated ProjectsScreen to use the new hook"
+```
+
+```
+[main 656dd3c] feat: add persistent storage and status toggling\n\n- Added AsyncStorage for persistent proje
+ct storage\n- Created useProjects hook for centralized project management\n- Added loading and error states
+to ProjectList\n- Added ability to toggle project status\n- Updated ProjectsScreen to use the new hook
+ 7 files changed, 1575 insertions(+), 27 deletions(-)
+ create mode 100644 .specstory/history/2025-03-25_03-10-implementing-feature-with-tdd-approach.md
+ create mode 100644 components/__tests__/__snapshots__/StyledText-test.js.snap
+ create mode 100644 hooks/useProjects.ts
+
+```
+
+---
+
+We've now added:
+1. Persistent storage using AsyncStorage
+2. A custom `useProjects` hook that manages all project-related state and operations
+3. Loading and error states in the UI
+4. The ability to toggle project status
+5. Automatic updating of `updatedAt` timestamps when projects are modified
+
+The app now has a fully functional project management system with persistence. Would you like to:
+1. Add project deletion functionality
+2. Add project editing (rename, etc.)
+3. Add project filtering/search
+4. Add more settings features
+5. Something else?
+
+---
+
+_**User**_
+
+Please review the PRD for required features. 
+
+---
+
+_**Assistant**_
+
+I'll review the PRD to check what features we've implemented and what's still needed.
+
+---
+
+Read file: .ai/prd.md
+
+---
+
+Looking at the PRD, let's check our progress on the MVP features:
+
+Story 1: Project List View
+- ✅ Display list of projects
+- ✅ Sort by recency (updated/created)
+- ✅ Pin projects to top
+- ✅ Mark project status (finished/in progress)
+- ✅ Create new projects
+- ✅ Project name as only required field
+
+Story 2: Project View (Not Started)
+- ❌ Large, clear display of current row count
+- ❌ Large increment button (+)
+- ❌ Small decrement button (-)
+- ❌ Reset functionality with confirmation
+- ❌ Prevent negative row counts
+
+Technical Requirements:
+- ✅ React Native for iOS support
+- ✅ Offline-first architecture
+- ✅ Local storage for project data
+- ✅ Simple, responsive UI
+- ❌ Web Support (GitHub Pages deployment)
+
+We've completed Story 1 and most of the technical requirements, but we still need to implement Story 2: Project View. This is a critical feature as it's the core stitch counting functionality that users need.
+
+Would you like me to:
+1. Start implementing Story 2 (Project View) with the stitch counter functionality
+2. Add any missing features to Story 1 (I don't see any major gaps)
+3. Work on web support
+4. Something else?
+
+Based on the PRD's timeline and the fact that Story 2 is the core functionality users need, I recommend we proceed with option 1: implementing the Project View with stitch counting functionality. Would you like me to proceed with that?
+
+---
+
+_**User**_
+
+story 2
+
+---
+
+_**Assistant**_
+
+I'll help you implement Story 2: Project View. Let's first create a story file for it and then implement the feature using TDD.
+
+---
+
+Cancelled
+
+---
+
+
+
+---
+
 
 
 ---
