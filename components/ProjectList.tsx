@@ -1,6 +1,6 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { Link } from "expo-router";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import {
   Animated,
   FlatList,
@@ -50,6 +50,22 @@ if (Platform.OS === "android") {
 }
 
 /**
+ * Custom spring layout animation configuration for smoother transitions
+ */
+const CustomLayoutSpring = {
+  duration: 400,
+  create: {
+    type: LayoutAnimation.Types.spring,
+    property: LayoutAnimation.Properties.scaleXY,
+    springDamping: 0.7,
+  },
+  update: {
+    type: LayoutAnimation.Types.spring,
+    springDamping: 0.7,
+  },
+};
+
+/**
  * ProjectList component displays a list of knitting/crocheting projects and allows for:
  * - Viewing project status
  * - Pinning projects to the top
@@ -70,24 +86,57 @@ export default function ProjectList({
   error,
   refreshProjects,
 }: ProjectListProps) {
-  // Configure layout animation whenever the list updates
+  // Store animation values in a ref to persist between renders
+  const animationValuesRef = useRef<{ [key: string]: Animated.Value }>({});
+
+  // Initialize or update animation values when projects change
   useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    // Add new projects
+    projects.forEach((project) => {
+      if (!animationValuesRef.current[project.id]) {
+        animationValuesRef.current[project.id] = new Animated.Value(1);
+      }
+    });
+
+    // Clean up old projects
+    Object.keys(animationValuesRef.current).forEach((id) => {
+      if (!projects.find((p) => p.id === id)) {
+        delete animationValuesRef.current[id];
+      }
+    });
   }, [projects]);
 
   // Sort projects by pinned status, in_progress status, and updatedAt
   const sortedProjects = [...projects].sort((a, b) => {
-    // First sort by pinned status
-    if (a.pinned !== b.pinned) {
-      return a.pinned ? -1 : 1;
-    }
-    // Then sort by status (in_progress first)
-    if (a.status !== b.status) {
-      return a.status === "in_progress" ? -1 : 1;
-    }
-    // Finally sort by updatedAt (most recent first)
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    if (a.status !== b.status) return a.status === "in_progress" ? -1 : 1;
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
+
+  const handleItemUpdate = (id: string, callback: () => void) => {
+    const fadeAnim = animationValuesRef.current[id];
+    if (!fadeAnim) return;
+
+    // Configure layout animation for position changes
+    LayoutAnimation.configureNext(CustomLayoutSpring);
+
+    // Animate the specific item
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0.6,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Execute the state change
+    callback();
+  };
 
   // Refresh projects when screen comes into focus
   useFocusEffect(
@@ -112,62 +161,67 @@ export default function ProjectList({
     }, [refreshProjects])
   );
 
-  const renderProject = ({ item }: { item: Project }) => (
-    <Animated.View
-      key={item.id}
-      style={[styles.projectItem, item.pinned && styles.projectItemPinned]}
-      testID="project-item"
-    >
-      <View style={styles.projectMain}>
-        <Link href={`/${item.id}`} asChild>
-          <TouchableOpacity style={styles.projectNameContainer}>
-            <Text style={styles.projectName}>{item.name}</Text>
+  const renderProject = ({ item }: { item: Project }) => {
+    const fadeAnim = animationValuesRef.current[item.id];
+    if (!fadeAnim) return null;
+
+    return (
+      <Animated.View
+        key={item.id}
+        style={[
+          styles.projectItem,
+          item.pinned && styles.projectItemPinned,
+          {
+            opacity: fadeAnim,
+            transform: [
+              {
+                scale: fadeAnim.interpolate({
+                  inputRange: [0.6, 1],
+                  outputRange: [0.97, 1],
+                }),
+              },
+            ],
+          },
+        ]}
+        testID="project-item"
+      >
+        <View style={styles.projectMain}>
+          <Link href={`/${item.id}`} asChild>
+            <TouchableOpacity style={styles.projectNameContainer}>
+              <Text style={styles.projectName}>{item.name}</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+
+        <View style={styles.actions}>
+          <TouchableOpacity
+            onPress={() =>
+              handleItemUpdate(item.id, () => onToggleStatus(item.id))
+            }
+            style={[
+              styles.statusButton,
+              item.status === "in_progress"
+                ? styles.statusInProgress
+                : styles.statusFinished,
+            ]}
+          >
+            <Text style={styles.statusText}>
+              {item.status === "in_progress" ? "In Progress" : "Finished"}
+            </Text>
           </TouchableOpacity>
-        </Link>
-      </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          onPress={() => {
-            LayoutAnimation.configureNext(
-              LayoutAnimation.create(
-                300,
-                LayoutAnimation.Types.easeInEaseOut,
-                LayoutAnimation.Properties.opacity
-              )
-            );
-            onToggleStatus(item.id);
-          }}
-          style={[
-            styles.statusButton,
-            item.status === "in_progress"
-              ? styles.statusInProgress
-              : styles.statusFinished,
-          ]}
-        >
-          <Text style={styles.statusText}>
-            {item.status === "in_progress" ? "In Progress" : "Finished"}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => {
-            LayoutAnimation.configureNext(
-              LayoutAnimation.create(
-                300,
-                LayoutAnimation.Types.spring,
-                LayoutAnimation.Properties.scaleXY
-              )
-            );
-            onTogglePin(item.id);
-          }}
-          style={[styles.pinButton, item.pinned && styles.pinButtonActive]}
-        >
-          <Text>{item.pinned ? "📌" : "📍"}</Text>
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
-  );
+          <TouchableOpacity
+            onPress={() =>
+              handleItemUpdate(item.id, () => onTogglePin(item.id))
+            }
+            style={[styles.pinButton, item.pinned && styles.pinButtonActive]}
+          >
+            <Text>{item.pinned ? "📌" : "📍"}</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    );
+  };
 
   if (error) {
     return (
