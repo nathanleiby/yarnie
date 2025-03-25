@@ -2,9 +2,9 @@ import Counter from "@/components/Counter";
 import { Text } from "@/components/Themed";
 import { useProjects } from "@/hooks/useProjects";
 import { MaterialIcons } from "@expo/vector-icons";
-import * as KeepAwake from "expo-keep-awake";
+import { useKeepAwake } from "expo-keep-awake";
 import { Stack, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function ProjectScreen() {
@@ -13,14 +13,7 @@ export default function ProjectScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState("");
 
-  // Enable screen wake lock when component mounts
-  useEffect(() => {
-    KeepAwake.activateKeepAwake();
-    // Disable screen wake lock when component unmounts
-    return () => {
-      KeepAwake.deactivateKeepAwake();
-    };
-  }, []);
+  useKeepAwake();
 
   // Ensure id is a string
   const projectId = Array.isArray(id) ? id[0] : id;
