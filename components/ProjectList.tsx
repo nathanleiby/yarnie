@@ -34,6 +34,12 @@ interface ProjectListProps {
   onPinProject?: (id: string) => void;
   /** Callback function when a new project is created */
   onCreateProject?: (project: { name: string }) => void;
+  /** Callback function when a project's status is toggled */
+  onToggleStatus?: (id: string) => void;
+  /** Whether the component is in a loading state */
+  isLoading?: boolean;
+  /** Error message to display */
+  error?: string | null;
 }
 
 /**
@@ -53,6 +59,9 @@ const ProjectList: React.FC<ProjectListProps> = ({
   projects = [],
   onPinProject,
   onCreateProject,
+  onToggleStatus,
+  isLoading,
+  error,
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -71,6 +80,22 @@ const ProjectList: React.FC<ProjectListProps> = ({
       setIsCreating(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading projects...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
 
   if (projects.length === 0) {
     return (
@@ -113,9 +138,14 @@ const ProjectList: React.FC<ProjectListProps> = ({
         renderItem={({ item }) => (
           <View style={styles.projectItem} testID="project-item">
             <Text testID={`project-name-${item.id}`}>{item.name}</Text>
-            <Text testID={`status-${item.id}`}>
-              {item.status === "in_progress" ? "In Progress" : "Finished"}
-            </Text>
+            <TouchableOpacity
+              testID={`status-${item.id}`}
+              onPress={() => onToggleStatus?.(item.id)}
+            >
+              <Text>
+                {item.status === "in_progress" ? "In Progress" : "Finished"}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity
               testID={`pin-button-${item.id}`}
               onPress={() => onPinProject?.(item.id)}
@@ -190,6 +220,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: "center",
     marginTop: 16,
+  },
+  errorText: {
+    color: "red",
+    textAlign: "center",
+    margin: 16,
   },
 });
 
