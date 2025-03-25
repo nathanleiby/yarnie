@@ -1,14 +1,37 @@
-import { StyleSheet } from 'react-native';
+import ProjectList, { Project } from "@/components/ProjectList";
+import { View } from "@/components/Themed";
+import { useState } from "react";
+import { StyleSheet } from "react-native";
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+export default function ProjectsScreen() {
+  const [projects, setProjects] = useState<Project[]>([]);
 
-export default function TabOneScreen() {
+  const handleCreateProject = ({ name }: { name: string }) => {
+    const newProject: Project = {
+      id: Date.now().toString(), // Simple ID generation for now
+      name,
+      updatedAt: new Date(),
+      status: "in_progress",
+      pinned: false,
+    };
+    setProjects([...projects, newProject]);
+  };
+
+  const handlePinProject = (id: string) => {
+    setProjects(
+      projects.map((project) =>
+        project.id === id ? { ...project, pinned: !project.pinned } : project
+      )
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
+      <ProjectList
+        projects={projects}
+        onCreateProject={handleCreateProject}
+        onPinProject={handlePinProject}
+      />
     </View>
   );
 }
@@ -16,16 +39,5 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
   },
 });
