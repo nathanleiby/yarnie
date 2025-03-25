@@ -35,14 +35,12 @@
       "orientation": "portrait",
       "lang": "en",
       "dir": "ltr",
-      "shortName": "Yarnie",
-      "router": {
-        "mode": "hash"
-      }
+      "shortName": "Yarnie"
     },
     "plugins": ["expo-router"],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/yarnie"
     }
   }
 }
