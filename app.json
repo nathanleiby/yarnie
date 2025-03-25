@@ -35,7 +35,10 @@
       "orientation": "portrait",
       "lang": "en",
       "dir": "ltr",
-      "shortName": "Yarnie"
+      "shortName": "Yarnie",
+      "router": {
+        "mode": "hash"
+      }
     },
     "plugins": ["expo-router"],
     "experiments": {
