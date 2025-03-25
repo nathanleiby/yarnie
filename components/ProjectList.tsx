@@ -232,17 +232,27 @@ export default function ProjectList({
   }
 
   return (
-    <FlatList
-      style={styles.container}
-      data={sortedProjects}
-      renderItem={renderProject}
-      keyExtractor={(item) => item.id}
-    />
+    <View style={styles.container}>
+      <FlatList
+        style={styles.list}
+        data={sortedProjects}
+        renderItem={renderProject}
+        keyExtractor={(item) => item.id}
+      />
+      <Link href="/new" asChild>
+        <TouchableOpacity style={styles.addButton}>
+          <Text style={styles.addButtonText}>Add Project</Text>
+        </TouchableOpacity>
+      </Link>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  list: {
     flex: 1,
   },
   projectItem: {
@@ -343,5 +353,17 @@ const styles = StyleSheet.create({
   error: {
     color: "#FF3B30",
     textAlign: "center",
+  },
+  addButton: {
+    backgroundColor: "#007AFF",
+    padding: 16,
+    borderRadius: 8,
+    margin: 16,
+    alignItems: "center",
+  },
+  addButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
