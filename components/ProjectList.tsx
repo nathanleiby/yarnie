@@ -1,18 +1,22 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { Link } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
+  Animated,
   FlatList,
+  LayoutAnimation,
+  Platform,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
+import { Text } from "./Themed";
 
 /**
  * Represents a knitting/crocheting project in the application
  */
-export interface Project {
+interface Project {
   /** Unique identifier for the project */
   id: string;
   /** Name of the project */
@@ -31,18 +35,18 @@ export interface Project {
  * Props for the ProjectList component
  */
 interface ProjectListProps {
-  /** Array of projects to display. Defaults to empty array if not provided */
-  projects?: Project[];
-  /** Callback function when a project is pinned/unpinned */
-  onPinProject?: (id: string) => void;
-  /** Callback function when a new project is created */
-  onCreateProject?: (project: { name: string }) => void;
-  /** Callback function when a project's status is toggled */
-  onToggleStatus?: (id: string) => void;
-  /** Whether the component is in a loading state */
-  isLoading?: boolean;
-  /** Error message to display */
+  projects: Project[];
+  onToggleStatus: (id: string) => void;
+  onTogglePin: (id: string) => void;
   error?: string | null;
+  refreshProjects: () => Promise<void>;
+}
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === "android") {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
 }
 
 /**
@@ -53,163 +57,159 @@ interface ProjectListProps {
  *
  * Projects are sorted by:
  * 1. Pinned status (pinned projects first)
- * 2. Last updated time (most recent first)
+ * 2. Status (in_progress projects first)
+ * 3. Last updated time (most recent first)
  *
  * @param props - {@link ProjectListProps}
  * @returns React component
  */
-const ProjectList: React.FC<ProjectListProps> = ({
-  projects = [],
-  onPinProject,
-  onCreateProject,
+export default function ProjectList({
+  projects,
   onToggleStatus,
-  isLoading,
+  onTogglePin,
   error,
-}) => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [newProjectName, setNewProjectName] = useState("");
+  refreshProjects,
+}: ProjectListProps) {
+  // Configure layout animation whenever the list updates
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, [projects]);
 
-  const sortedProjects = [...projects].sort((a, b) => {
-    // First sort by pinned status
-    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    // Then by recency
-    return b.updatedAt.getTime() - a.updatedAt.getTime();
-  });
+  // Refresh projects when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-  const handleCreateProject = () => {
-    if (newProjectName.trim() && onCreateProject) {
-      onCreateProject({ name: newProjectName.trim() });
-      setNewProjectName("");
-      setIsCreating(false);
-    }
-  };
+      const refresh = async () => {
+        try {
+          if (isActive) {
+            await refreshProjects();
+          }
+        } catch (e) {
+          console.error("Failed to refresh projects:", e);
+        }
+      };
 
-  const renderProject = ({ item }: { item: Project }) => (
-    <Link href={`/${item.id}`} asChild>
-      <TouchableOpacity style={styles.projectItem} testID="project-item">
-        <Text testID={`project-name-${item.id}`}>{item.name}</Text>
-        <View style={styles.projectActions}>
-          <TouchableOpacity
-            testID={`status-${item.id}`}
-            onPress={(e) => {
-              e.stopPropagation();
-              onToggleStatus?.(item.id);
-            }}
-          >
-            <Text>
-              {item.status === "in_progress" ? "In Progress" : "Finished"}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID={`pin-button-${item.id}`}
-            onPress={(e) => {
-              e.stopPropagation();
-              onPinProject?.(item.id);
-            }}
-          >
-            <Text>{item.pinned ? "📌" : "📍"}</Text>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
-    </Link>
+      refresh();
+
+      return () => {
+        isActive = false;
+      };
+    }, [refreshProjects])
   );
 
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading projects...</Text>
+  const renderProject = ({ item }: { item: Project }) => (
+    <Animated.View
+      key={item.id}
+      style={[styles.projectItem, item.pinned && styles.projectItemPinned]}
+      testID="project-item"
+    >
+      <View style={styles.projectMain}>
+        <Link href={`/${item.id}`} asChild>
+          <TouchableOpacity style={styles.projectNameContainer}>
+            <Text style={styles.projectName}>{item.name}</Text>
+          </TouchableOpacity>
+        </Link>
       </View>
-    );
-  }
+
+      <View style={styles.actions}>
+        <TouchableOpacity
+          onPress={() => {
+            LayoutAnimation.configureNext(
+              LayoutAnimation.create(
+                300,
+                LayoutAnimation.Types.easeInEaseOut,
+                LayoutAnimation.Properties.opacity
+              )
+            );
+            onToggleStatus(item.id);
+          }}
+          style={[
+            styles.statusButton,
+            item.status === "in_progress"
+              ? styles.statusInProgress
+              : styles.statusFinished,
+          ]}
+        >
+          <Text style={styles.statusText}>
+            {item.status === "in_progress" ? "In Progress" : "Finished"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            LayoutAnimation.configureNext(
+              LayoutAnimation.create(
+                300,
+                LayoutAnimation.Types.spring,
+                LayoutAnimation.Properties.scaleXY
+              )
+            );
+            onTogglePin(item.id);
+          }}
+          style={[styles.pinButton, item.pinned && styles.pinButtonActive]}
+        >
+          <Text>{item.pinned ? "📌" : "📍"}</Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
 
   if (error) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
-    );
-  }
-
-  if (projects.length === 0) {
-    return (
-      <View style={styles.container}>
-        {isCreating ? (
-          <View style={styles.createForm}>
-            <TextInput
-              style={styles.input}
-              value={newProjectName}
-              onChangeText={setNewProjectName}
-              placeholder="Project name"
-            />
-            <TouchableOpacity
-              style={styles.createButton}
-              onPress={handleCreateProject}
-            >
-              <Text>Create</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            <Text>No projects yet</Text>
-            <TouchableOpacity
-              style={styles.newButton}
-              onPress={() => setIsCreating(true)}
-            >
-              <Text>New Project</Text>
-            </TouchableOpacity>
-          </>
-        )}
+        <Text style={styles.error}>{error}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={sortedProjects}
-        keyExtractor={(item) => item.id}
-        renderItem={renderProject}
-      />
-
-      {isCreating ? (
-        <View style={styles.createForm}>
-          <TextInput
-            style={styles.input}
-            value={newProjectName}
-            onChangeText={setNewProjectName}
-            placeholder="Project name"
-          />
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={handleCreateProject}
-          >
-            <Text>Create</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity
-          style={styles.newButton}
-          onPress={() => setIsCreating(true)}
-        >
-          <Text>New Project</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+    <FlatList
+      style={styles.container}
+      data={projects}
+      renderItem={renderProject}
+      keyExtractor={(item) => item.id}
+    />
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
   },
   projectItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    justifyContent: "space-between",
+    padding: 12,
+    backgroundColor: "#fff",
+    marginVertical: 4,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  projectItemPinned: {
+    backgroundColor: "#FFFAF0",
+    borderLeftWidth: 3,
+    borderLeftColor: "#FFB74D",
+  },
+  projectMain: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  projectNameContainer: {
+    flex: 1,
+  },
+  projectName: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#2c3e50",
   },
   createForm: {
     marginTop: 16,
@@ -241,11 +241,39 @@ const styles = StyleSheet.create({
     textAlign: "center",
     margin: 16,
   },
-  projectActions: {
+  actions: {
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
   },
+  statusButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  statusInProgress: {
+    backgroundColor: "#E3F2FD",
+    borderColor: "#2196F3",
+  },
+  statusFinished: {
+    backgroundColor: "#E8F5E9",
+    borderColor: "#4CAF50",
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  pinButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: "#f0f0f0",
+  },
+  pinButtonActive: {
+    backgroundColor: "#FFE0B2",
+  },
+  error: {
+    color: "#FF3B30",
+    textAlign: "center",
+  },
 });
-
-export default ProjectList;

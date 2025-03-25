@@ -9,11 +9,13 @@ import {
 } from "react-native";
 
 interface CounterProps {
-  count: number;
+  /** The current count value */
+  count?: number;
+  /** Callback function when count changes */
   onChange: (newCount: number) => void;
 }
 
-const Counter: React.FC<CounterProps> = ({ count, onChange }) => {
+const Counter: React.FC<CounterProps> = ({ count = 0, onChange }) => {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const handleIncrement = () => {

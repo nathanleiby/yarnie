@@ -7,6 +7,11 @@ describe("Counter", () => {
     expect(getByTestId("count-display")).toHaveTextContent("42");
   });
 
+  it("uses default count of 0 when count is not provided", () => {
+    const { getByTestId } = render(<Counter onChange={() => {}} />);
+    expect(getByTestId("count-display")).toHaveTextContent("0");
+  });
+
   it("increments count when + button is pressed", () => {
     const onChange = jest.fn();
     const { getByTestId } = render(<Counter count={42} onChange={onChange} />);

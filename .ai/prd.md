@@ -46,7 +46,7 @@ Knitters and crocheters often:
 
 ### MVP (Minimum Viable Product)
 
-#### Project List View
+#### Story 1: Project List View
 
 - Display list of projects
 - Sort by recency (updated/created)
@@ -55,13 +55,17 @@ Knitters and crocheters often:
 - Create new projects
 - Project name as only required field
 
-#### Project View
+#### Story 2: Project View
 
 - Large, clear display of current row count
 - Large increment button (+)
 - Small decrement button (-)
 - Reset functionality with confirmation
 - Prevent negative row counts
+
+#### Story 3: Physical device UX
+
+- Phone screen should not go to sleep when user is on Project View
 
 ### Technical Requirements
 

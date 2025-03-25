@@ -1,4 +1,12 @@
-import { Project } from "@/components/ProjectList";
+interface Project {
+  id: string;
+  name: string;
+  status: "in_progress" | "finished";
+  pinned: boolean;
+  rowCount: number;
+  updatedAt: Date;
+}
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 
@@ -8,6 +16,25 @@ export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const loadProjects = async () => {
+    try {
+      setIsLoading(true);
+      const storedProjects = await AsyncStorage.getItem(STORAGE_KEY);
+      if (storedProjects) {
+        const parsedProjects = JSON.parse(storedProjects).map((p: any) => ({
+          ...p,
+          updatedAt: new Date(p.updatedAt),
+        }));
+        setProjects(parsedProjects);
+      }
+    } catch (e) {
+      setError("Failed to load projects");
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Load projects from storage on mount
   useEffect(() => {
@@ -21,76 +48,63 @@ export function useProjects() {
     }
   }, [projects, isLoading]);
 
-  const loadProjects = async () => {
+  const saveProjects = async (updatedProjects: Project[]) => {
     try {
-      const storedProjects = await AsyncStorage.getItem(STORAGE_KEY);
-      if (storedProjects) {
-        const parsedProjects = JSON.parse(storedProjects);
-        // Convert string dates back to Date objects
-        const projectsWithDates = parsedProjects.map((project: any) => ({
-          ...project,
-          updatedAt: new Date(project.updatedAt),
-        }));
-        setProjects(projectsWithDates);
-      }
-    } catch (e) {
-      setError("Failed to load projects");
-      console.error("Failed to load projects:", e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const saveProjects = async (projectsToSave: Project[]) => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(projectsToSave));
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProjects));
+      setProjects(updatedProjects);
     } catch (e) {
       setError("Failed to save projects");
-      console.error("Failed to save projects:", e);
+      console.error(e);
     }
   };
 
-  const createProject = ({ name }: { name: string }) => {
+  const createProject = async ({ name }: { name: string }) => {
     const newProject: Project = {
       id: Date.now().toString(),
       name,
-      updatedAt: new Date(),
       status: "in_progress",
       pinned: false,
       rowCount: 0,
+      updatedAt: new Date(),
     };
-    setProjects([...projects, newProject]);
+
+    const updatedProjects = [...projects, newProject];
+    await saveProjects(updatedProjects);
   };
 
-  const updateProject = (id: string, updatedProject: Project) => {
-    setProjects(
-      projects.map((project) => (project.id === id ? updatedProject : project))
+  const updateProject = async (id: string, updatedProject: Project) => {
+    const updatedProjects = projects.map((p) =>
+      p.id === id ? updatedProject : p
     );
+    await saveProjects(updatedProjects);
   };
 
-  const togglePinProject = (id: string) => {
-    setProjects(
-      projects.map((project) =>
-        project.id === id
-          ? { ...project, pinned: !project.pinned, updatedAt: new Date() }
-          : project
-      )
-    );
+  const togglePinProject = async (id: string) => {
+    const project = projects.find((p) => p.id === id);
+    if (project) {
+      const updatedProject = {
+        ...project,
+        pinned: !project.pinned,
+        updatedAt: new Date(),
+      };
+      await updateProject(id, updatedProject);
+    }
   };
 
-  const toggleProjectStatus = (id: string) => {
-    setProjects(
-      projects.map((project) =>
-        project.id === id
-          ? {
-              ...project,
-              status:
-                project.status === "in_progress" ? "finished" : "in_progress",
-              updatedAt: new Date(),
-            }
-          : project
-      )
-    );
+  const toggleProjectStatus = async (id: string) => {
+    const project = projects.find((p) => p.id === id);
+    if (project) {
+      const newStatus =
+        project.status === "in_progress"
+          ? ("finished" as const)
+          : ("in_progress" as const);
+      const updatedProject = {
+        ...project,
+        status: newStatus,
+        updatedAt: new Date(),
+      };
+      await updateProject(id, updatedProject);
+    }
   };
 
   return {
@@ -101,5 +115,6 @@ export function useProjects() {
     updateProject,
     togglePinProject,
     toggleProjectStatus,
+    refreshProjects: loadProjects,
   };
 }
