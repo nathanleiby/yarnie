@@ -75,6 +75,20 @@ export default function ProjectList({
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, [projects]);
 
+  // Sort projects by pinned status, in_progress status, and updatedAt
+  const sortedProjects = [...projects].sort((a, b) => {
+    // First sort by pinned status
+    if (a.pinned !== b.pinned) {
+      return a.pinned ? -1 : 1;
+    }
+    // Then sort by status (in_progress first)
+    if (a.status !== b.status) {
+      return a.status === "in_progress" ? -1 : 1;
+    }
+    // Finally sort by updatedAt (most recent first)
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
+
   // Refresh projects when screen comes into focus
   useFocusEffect(
     useCallback(() => {
@@ -166,7 +180,7 @@ export default function ProjectList({
   return (
     <FlatList
       style={styles.container}
-      data={projects}
+      data={sortedProjects}
       renderItem={renderProject}
       keyExtractor={(item) => item.id}
     />

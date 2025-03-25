@@ -1,48 +1,34 @@
 import ProjectList from "@/components/ProjectList";
+import { View } from "@/components/Themed";
 import { useProjects } from "@/hooks/useProjects";
-import { Stack } from "expo-router";
-import React from "react";
+import { StyleSheet } from "react-native";
 
-export default function Index() {
-  const { projects, isLoading, error, updateProject, refreshProjects } =
-    useProjects();
-
-  const handleToggleStatus = (id: string) => {
-    const project = projects.find((p) => p.id === id);
-    if (project) {
-      updateProject(id, {
-        ...project,
-        status: project.status === "in_progress" ? "finished" : "in_progress",
-        updatedAt: new Date(),
-      });
-    }
-  };
-
-  const handleTogglePin = (id: string) => {
-    const project = projects.find((p) => p.id === id);
-    if (project) {
-      updateProject(id, {
-        ...project,
-        pinned: !project.pinned,
-        updatedAt: new Date(),
-      });
-    }
-  };
+export default function ProjectsScreen() {
+  const {
+    projects,
+    isLoading,
+    error,
+    createProject,
+    togglePinProject,
+    toggleProjectStatus,
+    refreshProjects,
+  } = useProjects();
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: "Projects",
-        }}
-      />
+    <View style={styles.container}>
       <ProjectList
         projects={projects}
-        onToggleStatus={handleToggleStatus}
-        onTogglePin={handleTogglePin}
         error={error}
+        onToggleStatus={toggleProjectStatus}
+        onTogglePin={togglePinProject}
         refreshProjects={refreshProjects}
       />
-    </>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
