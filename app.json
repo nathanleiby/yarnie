@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "yairn",
+    "name": "Yarnie",
     "slug": "yairn",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -25,11 +25,19 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Yarnie - Stitch Counter",
+      "description": "A simple stitch counter for knitters and crocheters",
+      "themeColor": "#007AFF",
+      "backgroundColor": "#ffffff",
+      "startUrl": ".",
+      "display": "standalone",
+      "orientation": "portrait",
+      "lang": "en",
+      "dir": "ltr",
+      "shortName": "Yarnie"
     },
-    "plugins": [
-      "expo-router"
-    ],
+    "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
     }
